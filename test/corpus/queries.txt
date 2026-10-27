@@ -1,0 +1,29 @@
+==================
+Query statement with where and sort
+==================
+
+action ListOrders() -> Order {
+  query orders = many Order where total > 50.0 sort total desc limit 10 offset 0
+  return orders
+}
+
+---
+
+(source_file
+  (action_declaration
+    name: (identifier)
+    (parameter_list)
+    return_type: (type_identifier)
+    body: (block
+      (query_statement
+        name: (identifier)
+        entity: (type_identifier)
+        predicate: (binary_expression
+          left: (identifier)
+          right: (number))
+        (sort_field
+          (identifier))
+        limit: (number)
+        offset: (number))
+      (return_statement
+        value: (identifier)))))

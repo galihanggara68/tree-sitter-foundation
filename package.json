@@ -1,0 +1,30 @@
+{
+  "name": "tree-sitter-foundation",
+  "version": "0.1.0",
+  "description": "Tree-sitter grammar for Foundation (.fdn) Blueprints",
+  "main": "bindings/node",
+  "types": "bindings/node",
+  "keywords": [
+    "parser",
+    "lexer",
+    "tree-sitter",
+    "foundation"
+  ],
+  "author": "Foundation Authors",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "node-addon-api": "^8.2.1"
+  },
+  "devDependencies": {
+    "tree-sitter-cli": "^0.24.0"
+  },
+  "tree-sitter": [
+    {
+      "scope": "source.fdn",
+      "file-types": [
+        "fdn"
+      ],
+      "injection-regex": "^(foundation|fdn)$"
+    }
+  ]
+}

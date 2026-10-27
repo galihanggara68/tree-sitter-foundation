@@ -1,0 +1,60 @@
+==================
+Entity with traits
+==================
+
+entity Order @table(name: "orders") {
+  id: UUID @pk
+  total: Decimal
+}
+
+---
+
+(source_file
+  (entity_declaration
+    name: (type_identifier)
+    (trait
+      name: (identifier)
+      (trait_argument
+        key: (identifier)
+        value: (string)))
+    (field_declaration
+      name: (identifier)
+      type: (type_identifier)
+      (trait
+        name: (identifier)))
+    (field_declaration
+      name: (identifier)
+      type: (type_identifier))))
+
+==================
+Action with pipeline
+==================
+
+action CreateOrder(total: Decimal) -> Order {
+  let order = create Order {
+    total: total
+  }
+  return order
+}
+
+---
+
+(source_file
+  (action_declaration
+    name: (identifier)
+    (parameter_list
+      (parameter
+        name: (identifier)
+        type: (type_identifier)))
+    return_type: (type_identifier)
+    body: (block
+      (let_statement
+        name: (identifier)
+        value: (create_expression
+          entity: (type_identifier)
+          (record_literal
+            (field_assignment
+              field: (identifier)
+              value: (identifier)))))
+      (return_statement
+        value: (identifier)))))

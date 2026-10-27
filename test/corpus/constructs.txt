@@ -1,0 +1,45 @@
+==================
+Actor, Enum, Event and Error
+==================
+
+actor User {
+  id: UUID
+}
+
+enum OrderStatus {
+  Pending
+  Completed
+}
+
+event OrderCreated {
+  orderId: UUID
+}
+
+error OrderNotFound {
+  code: String
+}
+
+---
+
+(source_file
+  (actor_declaration
+    name: (type_identifier)
+    (field_declaration
+      name: (identifier)
+      type: (type_identifier)))
+  (enum_declaration
+    name: (type_identifier)
+    (enum_variant
+      name: (identifier))
+    (enum_variant
+      name: (identifier)))
+  (event_declaration
+    name: (type_identifier)
+    (field_declaration
+      name: (identifier)
+      type: (type_identifier)))
+  (error_declaration
+    name: (type_identifier)
+    (field_declaration
+      name: (identifier)
+      type: (type_identifier))))

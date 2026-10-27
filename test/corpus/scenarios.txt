@@ -1,0 +1,23 @@
+==================
+Scenario with assertions
+==================
+
+scenario "Create order flow" {
+  when CreateOrder(100.50)
+  expect result.total == 100.50
+}
+
+---
+
+(source_file
+  (scenario_declaration
+    name: (string)
+    (when_statement
+      action: (identifier)
+      (number))
+    (expect_statement
+      condition: (binary_expression
+        left: (member_expression
+          object: (identifier)
+          property: (identifier))
+        right: (number)))))
