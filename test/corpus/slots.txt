@@ -1,0 +1,76 @@
+==================
+Slot declaration and usage
+==================
+
+slot ShippingCalculator {
+  @external
+  Quote(address: Address, subtotal: Int) -> ShippingQuote throws ShippingUnavailable
+}
+
+action CreateShipment(subtotal: Int) -> Shipment {
+  let quote = slot ShippingCalculator.Quote(subtotal) else ShippingUnavailable
+  return quote
+}
+
+scenario "Stub slot" {
+  given slot ShippingCalculator.Quote(100) returns ShippingQuote {
+    fee: 15
+  }
+  given slot ShippingCalculator.Quote throws ShippingUnavailable
+  expect error ShippingUnavailable
+}
+
+---
+
+(source_file
+  (slot_declaration
+    (type_identifier)
+    (slot_method_declaration
+      (trait
+        (identifier))
+      (identifier)
+      (parameter_list
+        (parameter
+          (identifier)
+          (type_identifier))
+        (parameter
+          (identifier)
+          (type_identifier)))
+      (type_identifier)
+      (type_identifier)))
+  (action_declaration
+    (identifier)
+    (parameter_list
+      (parameter
+        (identifier)
+        (type_identifier)))
+    (type_identifier)
+    (block
+      (slot_call_statement
+        (identifier)
+        (type_identifier)
+        (identifier)
+        (identifier)
+        (identifier))
+      (return_statement
+        (identifier))))
+  (scenario_declaration
+    (string)
+    (given_statement
+      (given_slot
+        (type_identifier)
+        (identifier)
+        (number)
+        (typed_record_literal
+          (type_identifier)
+          (record_literal
+            (field_assignment
+              (identifier)
+              (number))))))
+    (given_statement
+      (given_slot
+        (type_identifier)
+        (identifier)
+        (type_identifier)))
+    (expect_statement
+      (type_identifier))))

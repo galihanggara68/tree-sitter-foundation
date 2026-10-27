@@ -5,6 +5,8 @@
   (enum_declaration)
   (event_declaration)
   (error_declaration)
+  (policy_declaration)
+  (slot_declaration)
   (action_declaration)
   (scenario_declaration)
   (step_statement)
