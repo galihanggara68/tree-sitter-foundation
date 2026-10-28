@@ -6,13 +6,14 @@
   "enum"
   "event"
   "error"
-  "policy"
   "slot"
   "action"
   "scenario"
   "step"
   "let"
+  "guard"
   "query"
+  "one"
   "single"
   "many"
   "where"
@@ -25,6 +26,7 @@
   "require"
   "else"
   "emit"
+  "set"
   "return"
   "given"
   "with"
@@ -37,6 +39,14 @@
   "emitted"
   "create"
   "update"
+  "delete"
+  "if"
+  "for"
+  "in"
+  "while"
+  "match"
+  "order_by"
+  "cursor"
   "not"
   "and"
   "or"
@@ -67,16 +77,21 @@
 (enum_variant name: (identifier) @constant)
 (event_declaration name: (type_identifier) @type)
 (error_declaration name: (type_identifier) @type)
-(policy_declaration name: (identifier) @function)
 (action_declaration name: (identifier) @function)
 (slot_method_declaration name: (identifier) @function)
 (slot_call_statement method: (identifier) @function)
 (slot_call_statement variable: (identifier) @variable)
 (given_slot method: (identifier) @function)
-(require_statement policy: (identifier) @function)
 (field_declaration name: (identifier) @property)
 (parameter name: (identifier) @variable.parameter)
 (field_assignment field: (identifier) @property)
+(arrow_function parameter: (identifier) @variable.parameter)
+(for_statement variable: (identifier) @variable)
+(match_arm variant: (identifier) @constant)
+(enum_literal variant: (identifier) @constant)
+(update_expression entity: (identifier) @type)
+(delete_statement entity: (identifier) @type)
+(query_many_expression order_by: (identifier) @property)
 
 ; Traits
 (trait "@" @attribute name: (identifier) @attribute)
@@ -97,11 +112,14 @@
   "<="
   ">"
   ">="
+  "&&"
+  "||"
   "+"
   "-"
   "*"
   "/"
   "="
+  "=>"
   "->"
 ] @operator
 
@@ -110,6 +128,8 @@
   "}"
   "("
   ")"
+  "["
+  "]"
 ] @punctuation.bracket
 
 [

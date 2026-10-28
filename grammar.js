@@ -3,7 +3,8 @@ module.exports = grammar({
 
   conflicts: $ => [
     [$._expression, $.type_identifier],
-    [$.expect_statement],
+    [$.query_statement],
+    [$.query_many_expression],
   ],
 
   extras: $ => [
@@ -27,7 +28,7 @@ module.exports = grammar({
       $.scenario_declaration,
     ),
 
-    comment: $ => token(seq('#', /.*/)),
+    comment: $ => token(seq(choice('//', '#'), /.*/)),
 
     // Entity
     entity_declaration: $ => seq(
@@ -43,6 +44,7 @@ module.exports = grammar({
     actor_declaration: $ => seq(
       'actor',
       field('name', $.type_identifier),
+      repeat($.trait),
       '{',
       repeat(choice($.field_declaration, $.comment)),
       '}'
@@ -52,6 +54,7 @@ module.exports = grammar({
     value_declaration: $ => seq(
       'value',
       field('name', $.type_identifier),
+      repeat($.trait),
       '{',
       repeat(choice($.field_declaration, $.comment)),
       '}'
@@ -62,7 +65,7 @@ module.exports = grammar({
       'enum',
       field('name', $.type_identifier),
       '{',
-      repeat(choice($.enum_variant, $.comment)),
+      repeat(choice($.enum_variant, ',', $.comment)),
       '}'
     ),
 
@@ -92,6 +95,7 @@ module.exports = grammar({
       'policy',
       field('name', $.identifier),
       $.parameter_list,
+      optional(seq('->', field('return_type', $._type))),
       field('body', $.block)
     ),
 
@@ -99,6 +103,7 @@ module.exports = grammar({
     slot_declaration: $ => seq(
       'slot',
       field('name', $.type_identifier),
+      repeat($.trait),
       '{',
       repeat(choice($.slot_method_declaration, $.comment)),
       '}'
@@ -108,7 +113,7 @@ module.exports = grammar({
       repeat($.trait),
       field('name', $.identifier),
       $.parameter_list,
-      optional(seq('->', field('return_type', $.type_identifier))),
+      optional(seq('->', field('return_type', $._type))),
       optional(seq('throws', commaSep1(field('error', $.type_identifier)))),
     ),
 
@@ -116,8 +121,28 @@ module.exports = grammar({
     field_declaration: $ => seq(
       field('name', $.identifier),
       ':',
-      field('type', $.type_identifier),
-      repeat($.trait)
+      field('type', choice($._type, $.string)),
+      optional('?'),
+      repeat($.trait),
+      optional(seq('=', field('default', $._expression)))
+    ),
+
+    // Types
+    _type: $ => choice(
+      $.list_type,
+      $.parameterized_type,
+      $.type_identifier,
+    ),
+
+    // List type, e.g. []uuid
+    list_type: $ => seq('[', ']', choice($.parameterized_type, $.type_identifier)),
+
+    // Parameterized type, e.g. decimal(12, 2)
+    parameterized_type: $ => seq(
+      field('name', $.type_identifier),
+      '(',
+      commaSep1($._expression),
+      ')'
     ),
 
     // Action declaration
@@ -125,7 +150,7 @@ module.exports = grammar({
       'action',
       field('name', $.identifier),
       optional($.parameter_list),
-      optional(seq('->', field('return_type', $.type_identifier))),
+      optional(seq('->', field('return_type', $._type))),
       repeat($.trait),
       field('body', $.block)
     ),
@@ -139,7 +164,7 @@ module.exports = grammar({
     parameter: $ => seq(
       field('name', $.identifier),
       ':',
-      field('type', $.type_identifier)
+      field('type', $._type)
     ),
 
     // Scenario declaration
@@ -164,7 +189,13 @@ module.exports = grammar({
       $.slot_call_statement,
       $.query_statement,
       $.validate_statement,
+      $.guard_statement,
       $.require_statement,
+      $.delete_statement,
+      $.if_statement,
+      $.match_statement,
+      $.for_statement,
+      $.while_statement,
       $.emit_statement,
       $.return_statement,
       $.step_statement,
@@ -197,12 +228,31 @@ module.exports = grammar({
       'query',
       field('name', $.identifier),
       '=',
-      choice('single', 'many'),
+      choice('one', 'single', 'many'),
       field('entity', $.type_identifier),
       optional(seq('where', field('predicate', $._expression))),
       optional(seq('sort', commaSep1($.sort_field))),
       optional(seq('limit', field('limit', $._expression))),
       optional(seq('offset', field('offset', $._expression)))
+    ),
+
+    query_expression: $ => seq(
+      'query',
+      field('mode', choice('one', 'single')),
+      field('entity', $.type_identifier),
+      optional(seq('where', field('predicate', $._expression))),
+      'else',
+      field('error', choice($.identifier, $.string))
+    ),
+
+    query_many_expression: $ => seq(
+      'query',
+      'many',
+      field('entity', $.type_identifier),
+      optional(seq('where', field('predicate', $._expression))),
+      optional(seq('order_by', field('order_by', $.identifier), optional(choice('asc', 'desc')))),
+      optional(seq('limit', field('limit', $._expression))),
+      optional(seq('cursor', field('cursor', $._expression)))
     ),
 
     sort_field: $ => seq(
@@ -216,6 +266,12 @@ module.exports = grammar({
       optional(seq('else', field('error', choice($.identifier, $.string))))
     ),
 
+    guard_statement: $ => seq(
+      'guard',
+      field('condition', $._expression),
+      optional(seq('else', field('error', choice($.identifier, $.string))))
+    ),
+
     require_statement: $ => seq(
       'require',
       field('policy', $.identifier),
@@ -223,6 +279,49 @@ module.exports = grammar({
       commaSep($._expression),
       ')',
       optional(seq('else', field('error', choice($.identifier, $.string))))
+    ),
+
+    delete_statement: $ => seq(
+      'delete',
+      field('entity', $.identifier),
+      'where',
+      field('predicate', $._expression)
+    ),
+
+    if_statement: $ => seq(
+      'if',
+      field('condition', $._expression),
+      field('consequence', $.block),
+      optional(seq('else', field('alternative', choice($.if_statement, $.block))))
+    ),
+
+    match_statement: $ => seq(
+      'match',
+      field('value', $._expression),
+      '{',
+      repeat(choice($.match_arm, ',', $.comment)),
+      '}'
+    ),
+
+    match_arm: $ => seq(
+      '.',
+      field('variant', $.identifier),
+      '=>',
+      field('body', choice($.block, $._statement))
+    ),
+
+    for_statement: $ => seq(
+      'for',
+      field('variable', $.identifier),
+      'in',
+      field('collection', $._expression),
+      field('body', $.block)
+    ),
+
+    while_statement: $ => seq(
+      'while',
+      field('condition', $._expression),
+      field('body', $.block)
     ),
 
     emit_statement: $ => seq(
@@ -296,12 +395,16 @@ module.exports = grammar({
     _expression: $ => choice(
       $.binary_expression,
       $.unary_expression,
+      $.arrow_function,
       $.call_expression,
       $.member_expression,
+      $.query_expression,
+      $.query_many_expression,
       $.create_expression,
       $.update_expression,
       $.typed_record_literal,
-      $.record_literal,
+      $.list_literal,
+      $.enum_literal,
       $.identifier,
       $.string,
       $.number,
@@ -317,7 +420,7 @@ module.exports = grammar({
 
     binary_expression: $ => prec.left(1, seq(
       field('left', $._expression),
-      field('operator', choice('==', '!=', '<', '<=', '>', '>=', 'and', 'or', '+', '-', '*', '/')),
+      field('operator', choice('==', '!=', '<', '<=', '>', '>=', 'and', 'or', '&&', '||', '+', '-', '*', '/')),
       field('right', $._expression)
     )),
 
@@ -326,8 +429,14 @@ module.exports = grammar({
       field('argument', $._expression)
     )),
 
+    arrow_function: $ => prec.right(-1, seq(
+      field('parameter', $.identifier),
+      '=>',
+      field('body', $._expression)
+    )),
+
     call_expression: $ => prec(3, seq(
-      field('function', $.identifier),
+      field('function', choice($.identifier, $.member_expression)),
       '(',
       commaSep($._expression),
       ')'
@@ -339,6 +448,17 @@ module.exports = grammar({
       field('property', $.identifier)
     )),
 
+    enum_literal: $ => seq(
+      '.',
+      field('variant', $.identifier)
+    ),
+
+    list_literal: $ => seq(
+      '[',
+      commaSep($._expression),
+      ']'
+    ),
+
     create_expression: $ => seq(
       'create',
       field('entity', $.type_identifier),
@@ -348,6 +468,8 @@ module.exports = grammar({
     update_expression: $ => seq(
       'update',
       field('entity', $.identifier),
+      optional(seq('where', field('predicate', $._expression))),
+      'set',
       $.record_literal
     ),
 

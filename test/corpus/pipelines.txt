@@ -1,0 +1,95 @@
+==================
+Parameterized types, query expression, guard and update
+==================
+
+entity Wallet {
+  id: uuid @pk
+  balance: decimal(12, 2)
+}
+
+error WalletNotFound {
+  kind: not_found
+  message: "Wallet does not exist"
+}
+
+action Transfer(from_id: uuid, input: TransferInput) -> bool {
+  let recipient = query one Wallet where id == input.to_wallet_id else WalletNotFound
+  guard recipient.balance >= input.amount else InsufficientFunds
+  update Wallet where id == from_id set {
+    balance: recipient.balance - input.amount
+  }
+  return true
+}
+
+---
+
+(source_file
+  (entity_declaration
+    name: (type_identifier)
+    (field_declaration
+      name: (identifier)
+      type: (type_identifier)
+      (trait
+        name: (identifier)))
+    (field_declaration
+      name: (identifier)
+      type: (parameterized_type
+        name: (type_identifier)
+        (number)
+        (number))))
+  (error_declaration
+    name: (type_identifier)
+    (field_declaration
+      name: (identifier)
+      type: (type_identifier))
+    (field_declaration
+      name: (identifier)
+      type: (string)))
+  (action_declaration
+    name: (identifier)
+    (parameter_list
+      (parameter
+        name: (identifier)
+        type: (type_identifier))
+      (parameter
+        name: (identifier)
+        type: (type_identifier)))
+    return_type: (type_identifier)
+    body: (block
+      (let_statement
+        name: (identifier)
+        value: (query_expression
+          entity: (type_identifier)
+          predicate: (binary_expression
+            left: (identifier)
+            right: (member_expression
+              object: (identifier)
+              property: (identifier)))
+          error: (identifier)))
+      (guard_statement
+        condition: (binary_expression
+          left: (member_expression
+            object: (identifier)
+            property: (identifier))
+          right: (member_expression
+            object: (identifier)
+            property: (identifier)))
+        error: (identifier))
+      (expression_statement
+        (update_expression
+          entity: (identifier)
+          predicate: (binary_expression
+            left: (identifier)
+            right: (identifier))
+          (record_literal
+            (field_assignment
+              field: (identifier)
+              value: (binary_expression
+                left: (member_expression
+                  object: (identifier)
+                  property: (identifier))
+                right: (member_expression
+                  object: (identifier)
+                  property: (identifier)))))))
+      (return_statement
+        value: (boolean)))))

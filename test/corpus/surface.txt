@@ -1,0 +1,304 @@
+==================
+List, optional, parameterized types and field defaults
+==================
+
+enum OrderStatus {
+  pending,
+  confirmed
+}
+
+value Input {
+  tags: []string
+  note: string?
+  price: decimal(10, 2)
+}
+
+entity Product {
+  id: uuid @pk
+  stock: int = 0
+  status: OrderStatus = .pending
+}
+
+---
+
+(source_file
+  (enum_declaration
+    name: (type_identifier)
+    (enum_variant
+      name: (identifier))
+    (enum_variant
+      name: (identifier)))
+  (value_declaration
+    name: (type_identifier)
+    (field_declaration
+      name: (identifier)
+      type: (list_type
+        (type_identifier)))
+    (field_declaration
+      name: (identifier)
+      type: (type_identifier))
+    (field_declaration
+      name: (identifier)
+      type: (parameterized_type
+        name: (type_identifier)
+        (number)
+        (number))))
+  (entity_declaration
+    name: (type_identifier)
+    (field_declaration
+      name: (identifier)
+      type: (type_identifier)
+      (trait
+        name: (identifier)))
+    (field_declaration
+      name: (identifier)
+      type: (type_identifier)
+      default: (number))
+    (field_declaration
+      name: (identifier)
+      type: (type_identifier)
+      default: (enum_literal
+        variant: (identifier)))))
+
+==================
+Queries, conditionals, match, loops and combinators
+==================
+
+action Run(input: Input) -> bool {
+  let one = query one Product where id == input.id else NotFound
+  let many = query many Product where stock > 0 order_by price desc limit 10 cursor tok
+  if one.stock > 0 {
+    let x = 1
+  } else {
+    delete Product where id == one.id
+  }
+  match one.status {
+    .pending => { return false }
+    .confirmed => { return true }
+  }
+  for item in many {
+    let y = item.stock - 1
+  }
+  while one.stock > 0 {
+    let z = one.stock - 1
+  }
+  let tags = ["a", "b"]
+  let doubled = many.map(p => p.price * 2)
+  return doubled.sum() > 0
+}
+
+---
+
+(source_file
+  (action_declaration
+    name: (identifier)
+    (parameter_list
+      (parameter
+        name: (identifier)
+        type: (type_identifier)))
+    return_type: (type_identifier)
+    body: (block
+      (let_statement
+        name: (identifier)
+        value: (query_expression
+          entity: (type_identifier)
+          predicate: (binary_expression
+            left: (identifier)
+            right: (member_expression
+              object: (identifier)
+              property: (identifier)))
+          error: (identifier)))
+      (let_statement
+        name: (identifier)
+        value: (query_many_expression
+          entity: (type_identifier)
+          predicate: (binary_expression
+            left: (identifier)
+            right: (number))
+          order_by: (identifier)
+          limit: (number)
+          cursor: (identifier)))
+      (if_statement
+        condition: (binary_expression
+          left: (member_expression
+            object: (identifier)
+            property: (identifier))
+          right: (number))
+        consequence: (block
+          (let_statement
+            name: (identifier)
+            value: (number)))
+        alternative: (block
+          (delete_statement
+            entity: (identifier)
+            predicate: (binary_expression
+              left: (identifier)
+              right: (member_expression
+                object: (identifier)
+                property: (identifier))))))
+      (match_statement
+        value: (member_expression
+          object: (identifier)
+          property: (identifier))
+        (match_arm
+          variant: (identifier)
+          body: (block
+            (return_statement
+              value: (boolean))))
+        (match_arm
+          variant: (identifier)
+          body: (block
+            (return_statement
+              value: (boolean)))))
+      (for_statement
+        variable: (identifier)
+        collection: (identifier)
+        body: (block
+          (let_statement
+            name: (identifier)
+            value: (binary_expression
+              left: (member_expression
+                object: (identifier)
+                property: (identifier))
+              right: (number)))))
+      (while_statement
+        condition: (binary_expression
+          left: (member_expression
+            object: (identifier)
+            property: (identifier))
+          right: (number))
+        body: (block
+          (let_statement
+            name: (identifier)
+            value: (binary_expression
+              left: (member_expression
+                object: (identifier)
+                property: (identifier))
+              right: (number)))))
+      (let_statement
+        name: (identifier)
+        value: (list_literal
+          (string)
+          (string)))
+      (let_statement
+        name: (identifier)
+        value: (call_expression
+          function: (member_expression
+            object: (identifier)
+            property: (identifier))
+          (arrow_function
+            parameter: (identifier)
+            body: (binary_expression
+              left: (member_expression
+                object: (identifier)
+                property: (identifier))
+              right: (number)))))
+      (return_statement
+        value: (binary_expression
+          left: (call_expression
+            function: (member_expression
+              object: (identifier)
+              property: (identifier)))
+          right: (number))))))
+
+==================
+Policy and scenario clauses
+==================
+
+policy CanPlace(actor: Actor) {
+  actor.role == "customer" && actor.is_verified == true
+}
+
+scenario "flow" {
+  given Product {
+    id: "1",
+    stock: 5
+  }
+  given slot PaymentGateway.Charge returns "ch_1"
+  when Run(Input {
+    request_id: "r"
+  })
+  expect result == true
+  expect stored Product where id == "1" {
+    stock: 3
+  }
+  expect not_stored Product where id == "2"
+  expect emitted OrderPlaced {
+    order_id: "o"
+  }
+  expect error InsufficientStock
+}
+
+---
+
+(source_file
+  (policy_declaration
+    name: (identifier)
+    (parameter_list
+      (parameter
+        name: (identifier)
+        type: (type_identifier)))
+    body: (block
+      (expression_statement
+        (binary_expression
+          left: (binary_expression
+            left: (binary_expression
+              left: (member_expression
+                object: (identifier)
+                property: (identifier))
+              right: (string))
+            right: (member_expression
+              object: (identifier)
+              property: (identifier)))
+          right: (boolean)))))
+  (scenario_declaration
+    name: (string)
+    (given_statement
+      (given_entity
+        entity: (type_identifier)
+        fields: (record_literal
+          (field_assignment
+            field: (identifier)
+            value: (string))
+          (field_assignment
+            field: (identifier)
+            value: (number)))))
+    (given_statement
+      (given_slot
+        slot: (type_identifier)
+        method: (identifier)
+        return_value: (string)))
+    (when_statement
+      action: (identifier)
+      (typed_record_literal
+        type: (type_identifier)
+        value: (record_literal
+          (field_assignment
+            field: (identifier)
+            value: (string)))))
+    (expect_statement
+      condition: (binary_expression
+        left: (identifier)
+        right: (boolean)))
+    (expect_statement
+      entity: (type_identifier)
+      predicate: (binary_expression
+        left: (identifier)
+        right: (string))
+      fields: (record_literal
+        (field_assignment
+          field: (identifier)
+          value: (number))))
+    (expect_statement
+      entity: (type_identifier)
+      predicate: (binary_expression
+        left: (identifier)
+        right: (string)))
+    (expect_statement
+      event: (type_identifier)
+      payload: (record_literal
+        (field_assignment
+          field: (identifier)
+          value: (string))))
+    (expect_statement
+      error: (type_identifier))))
